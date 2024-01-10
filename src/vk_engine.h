@@ -4,12 +4,35 @@
 #pragma once
 
 #include <vk_types.h>
+#include <vk_descriptors.h>
+
+struct DeletionQueue
+{
+	std::deque<std::function<void()>> deletors;
+
+	void push_function(std::function<void()>&& function) {
+		deletors.push_back(function);
+	}
+
+	//For the amount of objects we will use in this tutorial, its going to be fine. 
+	// But if you need to delete thousands of objects and want them deleted faster, 
+	// a better implementation would be to store arrays of vulkan handles 
+	// of various types such as VkImage, VkBuffer, and so on.
+	void flush() {
+		// reverse iterate the deletion queue to execute all the functions
+		for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
+			(*it)(); //call functors
+		}
+		deletors.clear();
+	}
+};
 
 struct FrameData {
 	VkCommandPool _commandPool;
 	VkCommandBuffer _mainCommandBuffer;
 	VkSemaphore _swapchainSemaphore, _renderSemaphore;
 	VkFence _renderFence;
+	DeletionQueue _deletionQueue;
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;
@@ -44,6 +67,22 @@ public:
 	VkQueue _graphicsQueue;
 	uint32_t _graphicsQueueFamily;
 
+	DeletionQueue _mainDeletionQueue;
+
+	VmaAllocator _allocator;
+
+	//draw resources
+	AllocatedImage _drawImage;
+	VkExtent2D _drawExtent;
+
+	DescriptorAllocator globalDescriptorAllocator;
+
+	VkDescriptorSet _drawImageDescriptors;
+	VkDescriptorSetLayout _drawImageDescriptorLayout;
+
+	VkPipeline _gradientPipeline;
+	VkPipelineLayout _gradientPipelineLayout;
+
 	static VulkanEngine& Get();
 
 	//initializes everything in the engine
@@ -51,6 +90,9 @@ public:
 
 	//shuts down the engine
 	void cleanup();
+
+	//draw background loop
+	void draw_background(VkCommandBuffer cmd);
 
 	//draw loop
 	void draw();
@@ -67,4 +109,9 @@ private:
 
 	void create_swapchain(uint32_t width, uint32_t height);
 	void destroy_swapchain();
+
+	void init_descriptors();
+
+	void init_pipelines();
+	void init_background_pipelines();
 };
