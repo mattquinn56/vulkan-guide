@@ -98,6 +98,10 @@ public:
 
 	VkPipeline _gradientPipeline;
 	VkPipelineLayout _gradientPipelineLayout;
+	VkPipelineLayout _meshPipelineLayout;
+	VkPipeline _meshPipeline;
+
+	GPUMeshBuffers rectangle;
 
 	// immediate submit structures
 	VkFence _immFence;
@@ -106,6 +110,9 @@ public:
 
 	std::vector<ComputeEffect> backgroundEffects;
 	int currentBackgroundEffect{ 0 };
+
+	VkPipelineLayout _trianglePipelineLayout;
+	VkPipeline _trianglePipeline;
 
 	static VulkanEngine& Get();
 
@@ -118,6 +125,8 @@ public:
 	//draw background loop
 	void draw_background(VkCommandBuffer cmd);
 
+	void draw_geometry(VkCommandBuffer cmd);
+
 	//draw loop
 	void draw();
 
@@ -125,6 +134,11 @@ public:
 	void run();
 
 	void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
+
+	AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+	void destroy_buffer(const AllocatedBuffer& buffer);
+
+	GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
 
 private:
 
@@ -137,9 +151,12 @@ private:
 	void destroy_swapchain();
 
 	void init_descriptors();
+	void init_default_data();
 
 	void init_pipelines();
 	void init_background_pipelines();
+	void init_triangle_pipeline();
+	void init_mesh_pipeline();
 
 	void init_imgui();
 	void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
